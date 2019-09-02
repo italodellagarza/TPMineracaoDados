@@ -1,0 +1,3 @@
+# Trabalho de Mineração de Dados
+
+Ainda em progresso...
