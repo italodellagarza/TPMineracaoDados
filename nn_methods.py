@@ -13,6 +13,8 @@ from pyro.distributions import Normal, Categorical
 from pyro.infer import SVI, Trace_ELBO
 from pyro.optim import Adam
 import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
 
 from bayesian_nn import BayesianNN
 
@@ -91,6 +93,45 @@ class NeuralNetworkMethods:
         lifted_module = pyro.random_module(("module" + str(self.number)), self.net, priors)
         
         return lifted_module()
+
+
+    def give_uncertainities(self, x, num_samples):
+        sampled_models = [self.guide(None, None) for _ in range(num_samples)]
+        yhats = [F.log_softmax(model(x).data, 1).detach().numpy() for model in sampled_models]
+        return np.asarray(yhats)
+
+
+    def test_batch(self, atributes, labels, num_samples, threshold):
+
+        y = self.give_uncertainities(atributes, num_samples)
+        predicted_for_data = 0
+        correct_predictions = 0
+        for i in range(len(labels)):
+            all_labels_prob = []
+            highted_something = False
+            for j in range(2):
+                highlight = False
+                histo = []
+                histo_exp = []
+                for z in range(y.shape[0]):
+                    histo.append(y[z][i][j])
+                    histo_exp.append(np.exp(y[z][i][j]))
+                # Amostrando a mediana da probabilidade
+                prob = np.percentile(histo_exp, 50)
+                # Se a rede pensar que essa amostragem tem threshold de
+                # chance de ser um rótulo, ela possibilita uma resposta.
+                if(prob > threshold):
+                    highlight = True
+                all_labels_prob.append(prob)
+                if(highlight):
+                    highted_something = True
+            predicted = np.argmax(all_labels_prob)
+            if(highted_something):
+                predicted_for_data += 1
+                if(labels[i].item() == predicted):
+                    correct_predictions += 1.0
+        return len(labels), correct_predictions, predicted_for_data
+
 
     def train(self, train_data, len_dataset, num_iterations):
         # Treina o algoritmo, usando inferência variacional com o
