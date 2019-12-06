@@ -1,7 +1,0 @@
-1. Criar um arquivo para a classe da rede neural e um arquivo para a rede neural bayesiana
-2. Tornar os parâmetros de entrada e saída da rede neural e seu treinamento ajustáveis
-3. Elaborar metodologia para criar várias redes neurais, cada uma com uma feature
-5. Testar e computar resultados.
-
-[:)] Enjoy!
- 
